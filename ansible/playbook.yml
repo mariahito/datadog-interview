@@ -1,0 +1,115 @@
+---
+- name: Deploy Kubernetes (MicroK8s) & Datadog via Helm
+  hosts: all
+  become: yes
+  remote_user: ubuntu
+  vars:
+    # Authentication & Naming
+    datadog_api_key: "{{ datadog_api_key }}"
+    datadog_site: "datadoghq.com"
+    cluster_name_val: "{{ hostname_alias | lower }}"
+    #env_tag: "{{ lookup('env', 'DD_ENV_TAG') | default('dev', true) }}"
+
+    # --- Feature Flags (Boolean) ---
+    # Default to 'true' if not specified in Pipeline
+    process_agent_enabled: "{{ process_agent_enabled | default(true) }}"
+    logs_enabled: "{{ logs_enabled | default(true) }}"
+
+    # --- Resource Sizing (Strings) ---
+    # Default to small/medium sizing if not specified
+    agent_request_memory: "{{ agent_request_memory | default('256Mi') }}"
+    agent_limit_memory: "{{ agent_limit_memory | default('512Mi') }}"
+    agent_request_cpu: "{{ agent_request_cpu | default('200m') }}"
+    agent_limit_cpu: "{{ agent_limit_cpu | default('500m') }}"
+
+  tasks:
+    # -------------------------------------------------------
+    # PHASE 0: PRE-FLIGHT CHECKS
+    # -------------------------------------------------------
+    - name: DEBUG - Verify Inventory Variables
+      debug:
+        msg: 
+          - "---------------------------------------------------"
+          - "TARGET HOST:    {{ inventory_hostname }}"
+          - "HOSTNAME ALIAS: {{ hostname_alias }}"
+          - "CLUSTER NAME:   {{ cluster_name_val }}"
+          - "ENV TAG:        {{ env_tag }}" 
+          - "MEMORY LIMIT:   {{ agent_limit_memory }}"
+          - "CPU LIMIT:      {{ agent_limit_cpu }}"
+          - "---------------------------------------------------"
+
+    # -------------------------------------------------------
+    # PHASE 1: BOOTSTRAP KUBERNETES (MicroK8s)
+    # -------------------------------------------------------
+    - name: Install MicroK8s (Lightweight Kubernetes)
+      snap:
+        name: microk8s
+        classic: yes
+        channel: 1.28/stable
+
+    - name: Wait for MicroK8s to be Ready
+      shell: microk8s status --wait-ready
+      changed_when: false
+      when: not ansible_check_mode
+
+    - name: Enable Helm and DNS addons
+      shell: microk8s enable helm dns
+      register: addons_result
+      changed_when: "'already enabled' not in addons_result.stdout"
+      when: not ansible_check_mode
+
+    - name: Create .kube directory for root
+      file:
+        path: /root/.kube
+        state: directory
+        mode: '0700'
+
+    - name: Export Kubeconfig
+      shell: microk8s config > /root/.kube/config
+      when: not ansible_check_mode
+
+    # -------------------------------------------------------
+    # PHASE 2: GENERATE CONFIGURATION (Using Template)
+    # -------------------------------------------------------
+    - name: Generate Datadog Values File
+      template:
+        src: datadog-values.j2
+        dest: /tmp/datadog-values.yaml
+        mode: '0644'
+
+    # -------------------------------------------------------
+    # PHASE 3: DEPLOY DATADOG
+    # -------------------------------------------------------
+    - name: Add Datadog Helm Repo
+      kubernetes.core.helm_repository:
+        name: datadog
+        repo_url: https://helm.datadoghq.com
+        binary_path: /snap/bin/microk8s.helm
+      when: not ansible_check_mode
+
+    - name: Ensure Datadog Namespace Exists
+      shell: microk8s kubectl create namespace datadog-agent --dry-run=client -o yaml | microk8s kubectl apply -f -
+      register: ns_create
+      changed_when: "'created' in ns_create.stdout"
+      when: not ansible_check_mode
+
+    - name: Deploy Datadog Agent (From Values File)
+      command: >
+        /snap/bin/microk8s.helm upgrade --install datadog-agent datadog/datadog
+        -f /tmp/datadog-values.yaml
+        --namespace datadog-agent
+        --create-namespace
+      environment:
+        KUBECONFIG: /root/.kube/config
+      when: not ansible_check_mode
+
+    # -------------------------------------------------------
+    # PHASE 4: DEPLOY SIMULATED APP
+    # -------------------------------------------------------
+    - name: Deploy Simulated Customer App (NGINX)
+      shell: |
+        microk8s kubectl get deployment nginx-app || \
+        microk8s kubectl create deployment nginx-app --image=nginx --replicas=2
+      register: app_deploy
+      changed_when: "'created' in app_deploy.stdout"
+      when: not ansible_check_mode

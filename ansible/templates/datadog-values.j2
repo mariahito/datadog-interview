@@ -1,0 +1,62 @@
+datadog:
+  apiKey: "{{ datadog_api_key }}"
+  site: "{{ datadog_site }}"
+  clusterName: "{{ cluster_name_val }}"
+  hostname: "{{ hostname_alias }}"
+  kubelet:
+    tlsVerify: false
+  
+  processAgent:
+    # Controls if the Process Agent container runs
+    enabled: {{ process_agent_enabled | lower }}
+    # Controls if it actually collects process data
+    processCollection: {{ process_agent_enabled | lower }}
+    
+  logs:
+    enabled: {{ logs_enabled | lower }}
+    containerCollectAll: {{ logs_enabled | lower }}
+    
+  # Resource Limits for the Node Agent
+  agents:
+    containers:
+      agent:
+        resources:
+          requests:
+            memory: "{{ agent_request_memory }}"
+            cpu: "{{ agent_request_cpu }}"
+          limits:
+            memory: "{{ agent_limit_memory }}"
+            cpu: "{{ agent_limit_cpu }}"
+    
+    # Global Environment Variables
+    env:
+      - name: DD_CLUSTER_NAME
+        value: "{{ cluster_name_val }}"
+      - name: DD_HOSTNAME
+        value: "{{ hostname_alias }}"
+      - name: DD_CLOUD_PROVIDER_METADATA
+        value: "false"
+      - name: DD_EC2_METADATA_ENABLED
+        value: "false"
+      # --- FORCE PROCESS COLLECTION ---
+      - name: DD_PROCESS_CONFIG_PROCESS_COLLECTION_ENABLED
+        value: "{{ process_agent_enabled | lower }}"
+
+  tags:
+    - "env:{{ env_tag }}"
+    - "deploy_method:helm"
+
+# Cluster Agent config
+clusterAgent:
+  enabled: true
+  replicas: 1
+  env:
+    - name: DD_CLUSTER_NAME
+      value: "{{ cluster_name_val }}"
+
+# Orchestrator
+orchestratorExplorer:
+  enabled: true
+
+agents:
+  useHostNetwork: true
