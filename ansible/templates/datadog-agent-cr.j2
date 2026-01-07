@@ -34,3 +34,7 @@ spec:
       env:
         - name: DD_HOSTNAME
           value: "{{ hostname_alias }}"
+        - name: DD_CLOUD_PROVIDER_METADATA
+          value: "false"
+        - name: DD_EC2_METADATA_ENABLED
+          value: "false"
