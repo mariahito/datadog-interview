@@ -38,13 +38,15 @@ spec:
       env:
         - name: DD_HOSTNAME
           value: "{{ hostname_alias }}"
-        - name: DD_CLOUD_PROVIDER_METADATA
-          value: "false"
-        - name: DD_EC2_METADATA_ENABLED
-          value: "false"
-        - name: DD_KUBELET_TLS_VERIFY
-          value: "false"
+        - name: DD_CLUSTER_NAME
+          value: "{{ cluster_name_val }}"
         - name: DD_KUBERNETES_KUBELET_HOST
           valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
+        - name: DD_CLOUD_PROVIDER_METADATA
+          value: "false"
+        - name: DD_EC2_METADATA_ENABLED
+          value: "false"
