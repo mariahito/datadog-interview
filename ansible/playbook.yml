@@ -71,18 +71,23 @@
     # -------------------------------------------------------
     # PHASE 2: DEPLOY DATADOG OPERATOR
     # -------------------------------------------------------
-    - name: Add Datadog Helm Repo
-      kubernetes.core.helm_repository:
-        name: datadog
-        repo_url: https://helm.datadoghq.com
-        binary_path: /snap/bin/microk8s.helm
+    - name: Add Datadog Helm Repo (Manual Shell)
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s.helm repo add datadog https://helm.datadoghq.com
+        microk8s.helm repo update
+      register: helm_repo_add
+      changed_when: "'has been added' in helm_repo_add.stdout"
+      environment:
+        KUBECONFIG: /root/.kube/config
 
     - name: Install Datadog Operator
-      command: >
-        /snap/bin/microk8s.helm upgrade --install datadog-operator datadog/datadog-operator
-        --namespace datadog-agent
-        --create-namespace
-        --set installCRDs=true
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s.helm upgrade --install datadog-operator datadog/datadog-operator \
+          --namespace datadog-agent \
+          --create-namespace \
+          --set installCRDs=true
       environment:
         KUBECONFIG: /root/.kube/config
 
