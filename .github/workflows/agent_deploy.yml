@@ -1,4 +1,4 @@
-name: Agent Sequential Deployment (Operator)
+name: Agent Sequential Deployment
 
 on:
   push:
