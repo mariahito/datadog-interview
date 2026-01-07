@@ -6,6 +6,8 @@ spec:
   global:
     clusterName: "{{ cluster_name_val }}"
     site: "{{ datadog_site }}"
+    kubelet:
+      tlsVerify: false
     credentials:
       apiSecret:
         secretName: datadog-secret
@@ -22,6 +24,8 @@ spec:
 
   override:
     nodeAgent:
+      # CRITICAL: Required for MicroK8s to reach the Kubelet
+      hostNetwork: true
       containers:
         agent:
           resources:
@@ -38,3 +42,9 @@ spec:
           value: "false"
         - name: DD_EC2_METADATA_ENABLED
           value: "false"
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
