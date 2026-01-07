@@ -23,8 +23,12 @@ spec:
       enabled: true
 
   override:
+    clusterAgent:
+      hostNetwork: true
+      env:
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
     nodeAgent:
-      # CRITICAL: Required for MicroK8s to reach the Kubelet
       hostNetwork: true
       containers:
         agent:
