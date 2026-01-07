@@ -1,0 +1,36 @@
+apiVersion: datadoghq.com/v2alpha1
+kind: DatadogAgent
+metadata:
+  name: datadog
+spec:
+  global:
+    clusterName: "{{ cluster_name_val }}"
+    site: "{{ datadog_site }}"
+    credentials:
+      apiSecret:
+        secretName: datadog-secret
+        keyName: api-key
+  
+  features:
+    liveProcessCollection:
+      enabled: {{ process_agent_enabled | lower }}
+    logCollection:
+      enabled: {{ logs_enabled | lower }}
+      containerCollectAll: true
+    orchestratorExplorer:
+      enabled: true
+
+  override:
+    nodeAgent:
+      containers:
+        agent:
+          resources:
+            requests:
+              cpu: "{{ agent_request_cpu }}"
+              memory: "{{ agent_request_memory }}"
+            limits:
+              cpu: "{{ agent_limit_cpu }}"
+              memory: "{{ agent_limit_memory }}"
+      env:
+        - name: DD_HOSTNAME
+          value: "{{ hostname_alias }}"
