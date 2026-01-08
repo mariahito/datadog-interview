@@ -24,7 +24,9 @@ spec:
 
   override:
     clusterAgent:
-      hostNetwork: true
+      env:
+        - name: DD_KUBELET_TLS_VERIFY
+          value: "false"
     nodeAgent:
       hostNetwork: true
       containers:
