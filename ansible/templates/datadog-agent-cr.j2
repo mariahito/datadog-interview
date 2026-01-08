@@ -27,6 +27,8 @@ spec:
       env:
         - name: DD_KUBELET_TLS_VERIFY
           value: "false"
+        - name: DD_ORCHESTRATOR_EXPLORER_KUBELET_CONFIG_ENABLED
+          value: "true"
     nodeAgent:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
