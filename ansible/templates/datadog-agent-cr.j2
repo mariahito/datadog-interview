@@ -29,6 +29,7 @@ spec:
           value: "false"
     nodeAgent:
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         agent:
           resources:
@@ -43,6 +44,10 @@ spec:
           value: "{{ hostname_alias }}"
         - name: DD_CLUSTER_NAME
           value: "{{ cluster_name_val }}"
+        - name: DD_ORCHESTRATOR_EXPLORER_KUBELET_CONFIG_ENABLED
+          value: "true"
+        - name: DD_KUBERNETES_KUBELET_HTTPS_PORT
+          value: "10250"
         - name: DD_KUBERNETES_KUBELET_HOST
           valueFrom:
             fieldRef:
