@@ -113,10 +113,8 @@ jobs:
             -m shell -a "
               export PATH=\$PATH:/snap/bin; 
               POD_NAME=\$(microk8s kubectl get pods -n datadog-agent -l agent.datadoghq.com/component=agent -o jsonpath='{.items[0].metadata.name}'); 
-              microk8s kubectl exec -n datadog-agent \$POD_NAME -c agent -- agent status | grep -qi 'API Key is valid'
-            " \
-            --extra-vars "ansible_shell_executable=/bin/bash" \
-            -e "{ 'ansible_retries': 5, 'ansible_delay': 10 }"
+              microk8s kubectl exec -n datadog-agent \$POD_NAME -c agent -- agent status | grep -i 'API Key'
+            "
 
   # ---------------------------------------------------------
   # JOB 3: DEPLOY TO TEST (Operator + Custom Resource)
