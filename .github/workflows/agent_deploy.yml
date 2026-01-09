@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------
-  # JOB 1: PREPARE (Inventory Generation) - Unchanged
+  # JOB 1: PREPARE (Inventory Generation)
   # ---------------------------------------------------------
   prepare-inventory:
     name: "Gen Inventory"
@@ -34,9 +34,9 @@ jobs:
           DEV_IP=$(terraform output -raw dev_ip)
           TEST_IP=$(terraform output -raw test_ip)
           echo "[dev]" > ../inventory.ini
-          echo "$DEV_IP env_tag=dev hostname_alias=Datadog-Demo-Dev" >> ../inventory.ini
+          echo "$DEV_IP ansible_user=ubuntu env_tag=dev hostname_alias=Datadog-Demo-Dev" >> ../inventory.ini
           echo "[test]" >> ../inventory.ini
-          echo "$TEST_IP env_tag=test hostname_alias=Datadog-Demo-Test" >> ../inventory.ini
+          echo "$TEST_IP ansible_user=ubuntu env_tag=test hostname_alias=Datadog-Demo-Test" >> ../inventory.ini
       - uses: actions/upload-artifact@v4
         with:
           name: deployment-artifacts
@@ -76,7 +76,7 @@ jobs:
           SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/datadog/keys --region us-east-1 --query SecretString --output text)
           echo "DD_API_KEY=$(echo $SECRET_JSON | jq -r .DD_API_KEY)" >> $GITHUB_ENV
 
-      - name: Run Playbook (DEV)
+      - name: Run Modular Playbooks (DEV)
         run: |
           CHECK_MODE=""
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -85,10 +85,12 @@ jobs:
           fi
 
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            $CHECK_MODE \
-            --private-key ansible_key.pem \
-            --limit dev \
+          
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev -u ubuntu
+
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
@@ -99,7 +101,7 @@ jobs:
             agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
-      - name: "Health Check (DEV)"
+      - name: "Health Check & App Deployment (DEV)"
         if: github.event_name != 'pull_request'
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
@@ -123,6 +125,8 @@ jobs:
               echo 'Health Check Failed: API Key never validated';
               exit 1;
             "
+          ansible-playbook -i inventory.ini ansible/deploy-app.yml \
+            --private-key ansible_key.pem --limit dev -u ubuntu
 
   # ---------------------------------------------------------
   # JOB 3: DEPLOY TO TEST (Operator + Custom Resource)
@@ -164,10 +168,12 @@ jobs:
           fi
 
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            $CHECK_MODE \
-            --private-key ansible_key.pem \
-            --limit test \
+          
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit test -u ubuntu
+
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit test \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
@@ -178,7 +184,7 @@ jobs:
             agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
-      - name: "Health Check (TEST)"
+      - name: "Health Check & App Deployment (TEST)"
         if: github.event_name != 'pull_request'
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
@@ -186,7 +192,7 @@ jobs:
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status deployment/datadog-operator -n datadog-agent --timeout=60s"
           ansible test -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status daemonset/datadog-agent -n datadog-agent --timeout=60s"
-          ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
+          ansible test -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "
               export PATH=\$PATH:/snap/bin; 
               for i in {1..10}; do 
@@ -200,3 +206,5 @@ jobs:
               echo 'Health Check Failed: API Key never validated';
               exit 1;
             "
+          ansible-playbook -i inventory.ini ansible/deploy-app.yml \
+            --private-key ansible_key.pem --limit test -u ubuntu

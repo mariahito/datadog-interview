@@ -1,0 +1,26 @@
+---
+- name: Bootstrap Infrastructure (MicroK8s)
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install MicroK8s
+      snap:
+        name: microk8s
+        classic: yes
+        channel: 1.28/stable
+
+    - name: Wait for MicroK8s to be Ready
+      shell: microk8s status --wait-ready
+      changed_when: false
+
+    - name: Enable Helm and DNS
+      shell: microk8s enable helm dns
+      register: addons_result
+      changed_when: "'already enabled' not in addons_result.stdout"
+
+    - name: Create .kube directory and Export Config
+      shell: |
+        mkdir -p /root/.kube
+        microk8s config > /root/.kube/config
+        chmod 600 /root/.kube/config
+      changed_when: false
