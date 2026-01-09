@@ -137,4 +137,4 @@ jobs:
               exit 1;
             "
           ansible-playbook -i inventory.ini ansible/deploy-app.yml \
-            --private-key ansible_key.pem --limit test -u ubuntu
+            --private-key ansible_key.pem --limit prod -u ubuntu
