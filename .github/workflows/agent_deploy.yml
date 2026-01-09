@@ -34,9 +34,9 @@ jobs:
           DEV_IP=$(terraform output -raw dev_ip)
           TEST_IP=$(terraform output -raw test_ip)
           echo "[dev]" > ../inventory.ini
-          echo "$DEV_IP env_tag=dev hostname_alias=Datadog-Demo-Dev" >> ../inventory.ini
+          echo "$DEV_IP ansible_user=ubuntu env_tag=dev hostname_alias=Datadog-Demo-Dev" >> ../inventory.ini
           echo "[test]" >> ../inventory.ini
-          echo "$TEST_IP env_tag=test hostname_alias=Datadog-Demo-Test" >> ../inventory.ini
+          echo "$TEST_IP ansible_user=ubuntu env_tag=test hostname_alias=Datadog-Demo-Test" >> ../inventory.ini
       - uses: actions/upload-artifact@v4
         with:
           name: deployment-artifacts
