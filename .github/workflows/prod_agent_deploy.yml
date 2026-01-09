@@ -31,7 +31,7 @@ jobs:
           chmod 600 ../ansible_key.pem
           PROD_IP=$(terraform output -raw prod_ip)
           echo "[prod]" > ../inventory.ini
-          echo "$PROD_IP env_tag=prod hostname_alias=Datadog-Demo-Prod" >> ../inventory.ini
+          echo "$PROD_IP ansible_user=ubuntu env_tag=prod hostname_alias=Datadog-Demo-Prod" >> ../inventory.ini
       - uses: actions/upload-artifact@v4
         with:
           name: deployment-artifacts
@@ -78,35 +78,39 @@ jobs:
           
           # Dry Run first to validate the Custom Resource schema
           echo "--- STARTING PROD DRY RUN ---"
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            --check \
-            --private-key ansible_key.pem \
-            --limit prod \
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml --check --private-key ansible_key.pem --limit prod -u ubuntu
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml --check --private-key ansible_key.pem --limit prod -u ubuntu \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=true \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
+            orchestrator_explorer_enabled=${{ vars.ORCHESTRATOR_EXPLORER_ENABLED }} \
+            apm_enabled=${{ vars.APM_ENABLED }} \
             agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
             agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
             agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
           # Actual Deployment
-          echo "--- STARTING ACTUAL PROD DEPLOYMENT ---"
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            --private-key ansible_key.pem \
-            --limit prod \
-            --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
-            process_agent_enabled=true \
-            logs_enabled=${{ vars.LOGS_ENABLED }} \
-            agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
-            agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
-            agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
-            agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
+          - name: "Actual Prod Deployment"
+            run: |
+              export ANSIBLE_HOST_KEY_CHECKING=False
+              echo "--- APPLYING PROD CHANGES ---"
+              ansible-playbook -i inventory.ini ansible/setup-microk8s.yml --private-key ansible_key.pem --limit prod -u ubuntu
+              ansible-playbook -i inventory.ini ansible/setup-datadog.yml --private-key ansible_key.pem --limit prod -u ubuntu \
+                --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
+                process_agent_enabled=true \
+                logs_enabled=${{ vars.LOGS_ENABLED }} \
+                orchestrator_explorer_enabled=${{ vars.ORCHESTRATOR_EXPLORER_ENABLED }} \
+                apm_enabled=${{ vars.APM_ENABLED }} \
+                agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
+                agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
+                agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
+                agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
       # ---------------------------------------------------------
       # PHASE 3: PROD HEALTH VERIFICATION
       # ---------------------------------------------------------
-      - name: "Health Check (PROD)"
+      - name: "Health Check  & App Deployment (PROD)"
         run: |
           echo "--- VERIFYING PROD ROLLOUT ---"
           export ANSIBLE_HOST_KEY_CHECKING=False
@@ -118,3 +122,19 @@ jobs:
           # 2. Verify Agent DaemonSet (Managed by Operator)
           ansible prod -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status daemonset/datadog-agent -n datadog-agent --timeout=60s"
+          ansible prod -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
+            -m shell -a "
+              export PATH=\$PATH:/snap/bin; 
+              for i in {1..10}; do 
+                if microk8s kubectl exec -n datadog-agent daemonset/datadog-agent -c agent -- agent status | grep -i 'API Key'; then
+                  echo 'Health Check Passed: API Key Validated';
+                  exit 0;
+                fi;
+                echo 'Waiting for API Key validation (attempt \$i/10)...';
+                sleep 10;
+              done;
+              echo 'Health Check Failed: API Key never validated';
+              exit 1;
+            "
+          ansible-playbook -i inventory.ini ansible/deploy-app.yml \
+            --private-key ansible_key.pem --limit test -u ubuntu
