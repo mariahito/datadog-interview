@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------
-  # JOB 1: PREPARE (Inventory Generation) - Unchanged
+  # JOB 1: PREPARE (Inventory Generation)
   # ---------------------------------------------------------
   prepare-inventory:
     name: "Gen Inventory"
@@ -76,7 +76,7 @@ jobs:
           SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/datadog/keys --region us-east-1 --query SecretString --output text)
           echo "DD_API_KEY=$(echo $SECRET_JSON | jq -r .DD_API_KEY)" >> $GITHUB_ENV
 
-      - name: Run Playbook (DEV)
+      - name: Run Modular Playbooks (DEV)
         run: |
           CHECK_MODE=""
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -85,21 +85,22 @@ jobs:
           fi
 
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            $CHECK_MODE \
-            --private-key ansible_key.pem \
-            --limit dev \
+          
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev
+
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
-            orchestrator_explorer_enabled=${{ vars.OCHESTRATOR_EXPLORER_ENABLED }} \
             apm_enabled=${{ vars.APM_ENABLED }} \
             agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
             agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
             agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
-      - name: "Health Check (DEV)"
+      - name: "Health Check & App Deployment (DEV)"
         if: github.event_name != 'pull_request'
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
@@ -123,6 +124,8 @@ jobs:
               echo 'Health Check Failed: API Key never validated';
               exit 1;
             "
+          ansible-playbook -i inventory.ini ansible/deploy-app.yml \
+            --private-key ansible_key.pem --limit dev
 
   # ---------------------------------------------------------
   # JOB 3: DEPLOY TO TEST (Operator + Custom Resource)
@@ -164,21 +167,22 @@ jobs:
           fi
 
           export ANSIBLE_HOST_KEY_CHECKING=False
-          ansible-playbook -i inventory.ini ansible/playbook.yml \
-            $CHECK_MODE \
-            --private-key ansible_key.pem \
-            --limit test \
+          
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev
+
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
+            $CHECK_MODE --private-key ansible_key.pem --limit dev \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
-            orchestrator_explorer_enabled=${{ vars.OCHESTRATOR_EXPLORER_ENABLED }} \
             apm_enabled=${{ vars.APM_ENABLED }} \
             agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
             agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
             agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
-      - name: "Health Check (TEST)"
+      - name: "Health Check & App Deployment (TEST)"
         if: github.event_name != 'pull_request'
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
@@ -200,3 +204,5 @@ jobs:
               echo 'Health Check Failed: API Key never validated';
               exit 1;
             "
+          ansible-playbook -i inventory.ini ansible/deploy-app.yml \
+            --private-key ansible_key.pem --limit dev
