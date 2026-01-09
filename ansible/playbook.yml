@@ -115,13 +115,10 @@
     # -------------------------------------------------------
     # PHASE 4: DEPLOY SIMULATED APP
     # -------------------------------------------------------
-    - name: Setup Namespace for APM
+    - name: "Setup Namespace for APM"
       shell: |
         export PATH=$PATH:/snap/bin
-        #Create namespace if it doesn't exist
         microk8s kubectl get namespace custom-app || microk8s kubectl create namespace custom-app
-        
-        #Label for Datadog Admission Controller
         microk8s kubectl label namespace custom-app admission.datadoghq.com/enabled=true --overwrite
       register: ns_setup
       changed_when: "'labeled' in ns_setup.stdout or 'created' in ns_setup.stdout"
@@ -129,7 +126,11 @@
     - name: Deploy Simulated Customer App (NGINX)
       shell: |
         export PATH=$PATH:/snap/bin
-        # Check if deployment exists in the specific namespace
+        microk8s kubectl get deployment nginx-app -n custom-app || \
+        microk8s kubectl create deployment nginx-app --image=nginx --replicas=2 -n custom-app
+      register: app_deploy
+      changed_when: "'created' in app_deploy.stdout"
+      when: not ansible_check_mode
         microk8s kubectl get deployment nginx-app -n custom-app || \
         microk8s kubectl create deployment nginx-app --image=nginx --replicas=2 -n custom-app
       register: app_deploy
