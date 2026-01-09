@@ -22,9 +22,9 @@ spec:
     orchestratorExplorer:
       enabled: {{ orchestrator_explorer_enabled | lower }}
     apm:
-      enabled: true
+      enabled: {{ apm_enabled | lower }}
       hostPortConfig:
-        enabled: {{ apm_enabled | lower }}
+        enabled: true
     
     admissionController:
       enabled: true
