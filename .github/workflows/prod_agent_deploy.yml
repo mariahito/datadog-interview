@@ -91,21 +91,21 @@ jobs:
             agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
           # Actual Deployment
-          - name: "Actual Prod Deployment"
-            run: |
-              export ANSIBLE_HOST_KEY_CHECKING=False
-              echo "--- APPLYING PROD CHANGES ---"
-              ansible-playbook -i inventory.ini ansible/setup-microk8s.yml --private-key ansible_key.pem --limit prod -u ubuntu
-              ansible-playbook -i inventory.ini ansible/setup-datadog.yml --private-key ansible_key.pem --limit prod -u ubuntu \
-                --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
-                process_agent_enabled=true \
-                logs_enabled=${{ vars.LOGS_ENABLED }} \
-                orchestrator_explorer_enabled=${{ vars.ORCHESTRATOR_EXPLORER_ENABLED }} \
-                apm_enabled=${{ vars.APM_ENABLED }} \
-                agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
-                agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
-                agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
-                agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
+      - name: "Actual Prod Deployment"
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          echo "--- APPLYING PROD CHANGES ---"
+          ansible-playbook -i inventory.ini ansible/setup-microk8s.yml --private-key ansible_key.pem --limit prod -u ubuntu
+          ansible-playbook -i inventory.ini ansible/setup-datadog.yml --private-key ansible_key.pem --limit prod -u ubuntu \
+            --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
+            process_agent_enabled=true \
+            logs_enabled=${{ vars.LOGS_ENABLED }} \
+            orchestrator_explorer_enabled=${{ vars.ORCHESTRATOR_EXPLORER_ENABLED }} \
+            apm_enabled=${{ vars.APM_ENABLED }} \
+            agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
+            agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
+            agent_request_cpu=${{ vars.AGENT_REQ_CPU }} \
+            agent_limit_cpu=${{ vars.AGENT_LIM_CPU }}"
 
       # ---------------------------------------------------------
       # PHASE 3: PROD HEALTH VERIFICATION
