@@ -115,7 +115,7 @@
     # -------------------------------------------------------
     # PHASE 4: DEPLOY SIMULATED APP
     # -------------------------------------------------------
-    - name: "Setup Namespace for APM"
+    - name: Setup Namespace for APM
       shell: |
         export PATH=$PATH:/snap/bin
         #Create namespace if it doesn't exist
