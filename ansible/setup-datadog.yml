@@ -1,0 +1,46 @@
+---
+- name: Deploy Datadog Monitoring
+  hosts: all
+  become: yes
+  vars:
+    datadog_api_key: "{{ datadog_api_key }}"
+    datadog_site: "datadoghq.com"
+    cluster_name_val: "{{ hostname_alias | lower }}"
+    # Features
+    process_agent_enabled: "{{ process_agent_enabled | default(true) }}"
+    logs_enabled: "{{ logs_enabled | default(true) }}"
+    apm_enabled: "{{ apm_enabled | default(true) }}"
+
+  tasks:
+    - name: Add Datadog Helm Repo
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s.helm repo add datadog https://helm.datadoghq.com
+        microk8s.helm repo update
+      environment:
+        KUBECONFIG: /root/.kube/config
+
+    - name: Install Datadog Operator
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s.helm upgrade --install datadog-operator datadog/datadog-operator \
+          --namespace datadog-agent --create-namespace --set installCRDs=true
+      environment:
+        KUBECONFIG: /root/.kube/config
+
+    - name: Create Datadog API Key Secret
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s kubectl create secret generic datadog-secret \
+        --from-literal=api-key={{ datadog_api_key }} \
+        -n datadog-agent --dry-run=client -o yaml | microk8s kubectl apply -f -
+
+    - name: Generate and Apply DatadogAgent CR
+      template:
+        src: datadog-agent-cr.j2
+        dest: /tmp/datadog-agent-cr.yaml
+
+    - name: Apply CR
+      command: microk8s kubectl apply -f /tmp/datadog-agent-cr.yaml -n datadog-agent
+      environment:
+        KUBECONFIG: /root/.kube/config
