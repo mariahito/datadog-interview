@@ -6,11 +6,7 @@
     datadog_api_key: "{{ datadog_api_key }}"
     datadog_site: "datadoghq.com"
     cluster_name_val: "{{ hostname_alias | lower }}"
-    # Features
-    process_agent_enabled: "{{ process_agent_enabled | default(true) }}"
-    logs_enabled: "{{ logs_enabled | default(true) }}"
-    orchestrator_explorer_enabled: "{{ orchestrator_explorer_enabled | default(true) }}"
-    apm_enabled: "{{ apm_enabled | default(true) }}"
+    
 
   tasks:
     - name: Add Datadog Helm Repo
