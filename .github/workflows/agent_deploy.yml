@@ -87,7 +87,7 @@ jobs:
           export ANSIBLE_HOST_KEY_CHECKING=False
           
           ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
-            $CHECK_MODE --private-key ansible_key.pem --limit dev
+            $CHECK_MODE --private-key ansible_key.pem --limit dev -u ubuntu
 
           ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
             $CHECK_MODE --private-key ansible_key.pem --limit dev \
@@ -125,7 +125,7 @@ jobs:
               exit 1;
             "
           ansible-playbook -i inventory.ini ansible/deploy-app.yml \
-            --private-key ansible_key.pem --limit dev
+            --private-key ansible_key.pem --limit dev -u ubuntu
 
   # ---------------------------------------------------------
   # JOB 3: DEPLOY TO TEST (Operator + Custom Resource)
@@ -169,7 +169,7 @@ jobs:
           export ANSIBLE_HOST_KEY_CHECKING=False
           
           ansible-playbook -i inventory.ini ansible/setup-microk8s.yml \
-            $CHECK_MODE --private-key ansible_key.pem --limit dev
+            $CHECK_MODE --private-key ansible_key.pem --limit test -u ubuntu
 
           ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
             $CHECK_MODE --private-key ansible_key.pem --limit dev \
@@ -205,4 +205,4 @@ jobs:
               exit 1;
             "
           ansible-playbook -i inventory.ini ansible/deploy-app.yml \
-            --private-key ansible_key.pem --limit dev
+            --private-key ansible_key.pem --limit test -u ubuntu
