@@ -112,8 +112,16 @@ jobs:
           ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "
               export PATH=\$PATH:/snap/bin; 
-              POD_NAME=\$(microk8s kubectl get pods -n datadog-agent -l agent.datadoghq.com/component=agent -o jsonpath='{.items[0].metadata.name}'); 
-              microk8s kubectl exec -n datadog-agent \$POD_NAME -c agent -- agent status | grep -i 'API Key'
+              for i in {1..10}; do 
+                if microk8s kubectl exec -n datadog-agent daemonset/datadog-agent -c agent -- agent status | grep -i 'API Key'; then
+                  echo 'Health Check Passed: API Key Validated';
+                  exit 0;
+                fi;
+                echo 'Waiting for API Key validation (attempt \$i/10)...';
+                sleep 10;
+              done;
+              echo 'Health Check Failed: API Key never validated';
+              exit 1;
             "
 
   # ---------------------------------------------------------
@@ -181,6 +189,14 @@ jobs:
           ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "
               export PATH=\$PATH:/snap/bin; 
-              POD_NAME=\$(microk8s kubectl get pods -n datadog-agent -l agent.datadoghq.com/component=agent -o jsonpath='{.items[0].metadata.name}'); 
-              microk8s kubectl exec -n datadog-agent \$POD_NAME -c agent -- agent status | grep -i 'API Key'
+              for i in {1..10}; do 
+                if microk8s kubectl exec -n datadog-agent daemonset/datadog-agent -c agent -- agent status | grep -i 'API Key'; then
+                  echo 'Health Check Passed: API Key Validated';
+                  exit 0;
+                fi;
+                echo 'Waiting for API Key validation (attempt \$i/10)...';
+                sleep 10;
+              done;
+              echo 'Health Check Failed: API Key never validated';
+              exit 1;
             "
