@@ -110,7 +110,9 @@ jobs:
           ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status daemonset/datadog-agent -n datadog-agent --timeout=60s"
           ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
-            -m shell -a "export PATH=\$PATH:/snap/bin; POD=\$(microk8s kubectl get pods -l app.kubernetes.io/name=datadog-agent -n datadog-agent -o jsonpath='{.items[0].metadata.name}'); microk8s kubectl exec -n datadog-agent \$POD -- agent status | grep 'API Key is valid'"
+            -m shell -a "export PATH=\$PATH:/snap/bin; \
+                POD_NAME=\$(microk8s kubectl get pods -n datadog-agent -l agent.datadoghq.com/component=agent -o jsonpath='{.items[0].metadata.name}'); \
+                microk8s kubectl exec -n datadog-agent \$POD_NAME -- agent status | grep 'API Key is valid'"
 
   # ---------------------------------------------------------
   # JOB 3: DEPLOY TO TEST (Operator + Custom Resource)
