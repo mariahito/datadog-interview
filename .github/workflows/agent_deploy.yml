@@ -173,7 +173,7 @@ jobs:
             $CHECK_MODE --private-key ansible_key.pem --limit test -u ubuntu
 
           ansible-playbook -i inventory.ini ansible/setup-datadog.yml \
-            $CHECK_MODE --private-key ansible_key.pem --limit dev \
+            $CHECK_MODE --private-key ansible_key.pem --limit test \
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
@@ -192,7 +192,7 @@ jobs:
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status deployment/datadog-operator -n datadog-agent --timeout=60s"
           ansible test -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "export PATH=\$PATH:/snap/bin; microk8s kubectl rollout status daemonset/datadog-agent -n datadog-agent --timeout=60s"
-          ansible dev -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
+          ansible test -i inventory.ini --private-key ansible_key.pem -u ubuntu --become \
             -m shell -a "
               export PATH=\$PATH:/snap/bin; 
               for i in {1..10}; do 
