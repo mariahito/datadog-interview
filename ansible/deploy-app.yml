@@ -1,0 +1,42 @@
+---
+- name: Deploy Simulated Application
+  hosts: all
+  become: yes
+  tasks:
+    - name: Setup Namespace for APM
+      shell: |
+        export PATH=$PATH:/snap/bin
+        microk8s kubectl get namespace custom-app || microk8s kubectl create namespace custom-app
+        microk8s kubectl label namespace custom-app admission.datadoghq.com/enabled=true --overwrite
+      register: ns_setup
+      changed_when: "'labeled' in ns_setup.stdout or 'created' in ns_setup.stdout"
+
+    - name: Deploy NGINX with APM Annotations
+      shell: |
+        export PATH=$PATH:/snap/bin
+        cat <<EOF | microk8s kubectl apply -f -
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: nginx-app
+          namespace: custom-app
+        spec:
+          replicas: 2
+          selector:
+            matchLabels:
+              app: nginx-app
+          template:
+            metadata:
+              labels:
+                app: nginx-app
+                admission.datadoghq.com/enabled: "true"
+              annotations:
+                admission.datadoghq.com/nginx-lib.version: "latest"
+            spec:
+              containers:
+              - name: nginx
+                image: nginx
+                ports:
+                - containerPort: 80
+        EOF
+      changed_when: true
