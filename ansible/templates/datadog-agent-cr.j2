@@ -20,7 +20,15 @@ spec:
       enabled: {{ logs_enabled | lower }}
       containerCollectAll: true
     orchestratorExplorer:
+      enabled: {{ orchestrator_explorer_enabled | lower }}
+    apm:
+      enabled: {{ apm_enabled | lower }}
+      hostPortConfig:
+        enabled: true
+    
+    admissionController:
       enabled: true
+      mutateUnlabelled: false
 
   override:
     clusterAgent:

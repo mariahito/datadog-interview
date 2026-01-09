@@ -14,6 +14,8 @@
     # Default to 'true' if not specified in Pipeline
     process_agent_enabled: "{{ process_agent_enabled | default(true) }}"
     logs_enabled: "{{ logs_enabled | default(true) }}"
+    orchestrator_explorer_enabled: "{{ orchestrator_explorer_enabled | lower }}"
+    apm_enabled: "{{ apm_enabled | default(true) }}"
 
     # --- Resource Sizing (Strings) ---
     # Default to small/medium sizing if not specified
