@@ -94,6 +94,7 @@ jobs:
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
+            orchestrator_explorer_enabled=${{ vars.OCHESTRATOR_EXPLORER_ENABLED }} \
             apm_enabled=${{ vars.APM_ENABLED }} \
             agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
             agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
@@ -176,6 +177,7 @@ jobs:
             --extra-vars "datadog_api_key=${{ env.DD_API_KEY }} \
             process_agent_enabled=${{ vars.PROCESS_AGENT_ENABLED }} \
             logs_enabled=${{ vars.LOGS_ENABLED }} \
+            orchestrator_explorer_enabled=${{ vars.OCHESTRATOR_EXPLORER_ENABLED }} \
             apm_enabled=${{ vars.APM_ENABLED }} \
             agent_request_memory=${{ vars.AGENT_REQ_MEM }} \
             agent_limit_memory=${{ vars.AGENT_LIM_MEM }} \
