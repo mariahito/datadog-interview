@@ -54,6 +54,10 @@ spec:
           value: "{{ hostname_alias }}"
         - name: DD_CLUSTER_NAME
           value: "{{ cluster_name_val }}"
+        - name: DD_HOSTNAME_TRUST_CONFIG_SOURCE
+          value: "false"
+        - name: DD_HOSTNAME_FILE_CONFIG_SUBSTITUTE
+          value: "true"
         - name: DD_ORCHESTRATOR_EXPLORER_KUBELET_CONFIG_ENABLED
           value: "true"
         - name: DD_KUBERNETES_KUBELET_HTTPS_PORT
@@ -67,10 +71,6 @@ spec:
         - name: DD_CLOUD_PROVIDER_METADATA
           value: "true"
         - name: DD_EC2_METADATA_ENABLED
-          value: "true"
-        - name: DD_HOSTNAME_TRUST_CONFIG_SOURCE
-          value: "false"
-        - name: DD_HOSTNAME_FILE_CONFIG_SUBSTITUTE
           value: "true"
         - name: DD_METADATA_COLLECTION_INTERVAL
           value: "300"
