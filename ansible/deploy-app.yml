@@ -1,5 +1,5 @@
 ---
-- name: Deploy Simulated Application
+- name: Deploy Simulated Application Test
   hosts: all
   become: yes
   tasks:
