@@ -38,7 +38,7 @@ spec:
         - name: DD_ORCHESTRATOR_EXPLORER_KUBELET_CONFIG_ENABLED
           value: "true"
     nodeAgent:
-      hostNetwork: true
+      hostNetwork: false
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         agent:
