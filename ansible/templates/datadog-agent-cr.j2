@@ -65,6 +65,12 @@ spec:
         - name: DD_KUBELET_TLS_VERIFY
           value: "false"
         - name: DD_CLOUD_PROVIDER_METADATA
-          value: "false"
+          value: "true"
         - name: DD_EC2_METADATA_ENABLED
+          value: "true"
+        - name: DD_HOSTNAME_TRUST_CONFIG_SOURCE
           value: "false"
+        - name: DD_HOSTNAME_FILE_CONFIG_SUBSTITUTE
+          value: "true"
+        - name: DD_METADATA_COLLECTION_INTERVAL
+          value: "300"

@@ -59,6 +59,12 @@ resource "aws_instance" "dev_server" {
   key_name      = aws_key_pair.generated_key.key_name
   security_groups = [aws_security_group.datadog_demo_sg.name]
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # Enforces IMDSv2
+    http_put_response_hop_limit = 2          # Allows the Agent inside a container to reach metadata
+  }
+
   tags = {
     Name = "Datadog-Demo-Dev"
     Env  = "dev"
@@ -71,6 +77,12 @@ resource "aws_instance" "test_server" {
   key_name      = aws_key_pair.generated_key.key_name
   security_groups = [aws_security_group.datadog_demo_sg.name]
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # Enforces IMDSv2
+    http_put_response_hop_limit = 2          # Allows the Agent inside a container to reach metadata
+  }
+
   tags = {
     Name = "Datadog-Demo-Test"
     Env  = "test"
@@ -82,6 +94,12 @@ resource "aws_instance" "prod_server" {
   instance_type = var.instance_type
   key_name      = aws_key_pair.generated_key.key_name
   security_groups = [aws_security_group.datadog_demo_sg.name]
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required" # Enforces IMDSv2
+    http_put_response_hop_limit = 2          # Allows the Agent inside a container to reach metadata
+  }
 
   tags = {
     Name = "Datadog-Demo-Prod"
