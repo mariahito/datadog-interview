@@ -1,13 +1,14 @@
----
 - name: Bootstrap Infrastructure (MicroK8s)
   hosts: all
   become: yes
   tasks:
-    - name: Install MicroK8s
-      snap:
-        name: microk8s
-        classic: yes
-        channel: 1.28/stable
+    - name: Install MicroK8s via Command
+      command: snap install microk8s --classic --channel=1.28/stable
+      register: microk8s_install
+      changed_when: "'already installed' not in microk8s_install.stderr"
+      failed_when: 
+        - microk8s_install.rc != 0 
+        - "'already installed' not in microk8s_install.stderr"
 
     - name: Wait for MicroK8s to be Ready
       shell: microk8s status --wait-ready
