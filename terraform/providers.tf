@@ -6,9 +6,9 @@ terraform {
     }
   }
 
-  # ADD THIS BLOCK
+ 
   backend "s3" {
-    bucket = "datadog-demo-state" # USE YOUR ACTUAL BUCKET NAME
+    bucket = "datadog-demo-state"
     key    = "terraform.tfstate"
     region = "us-east-1"
   }
