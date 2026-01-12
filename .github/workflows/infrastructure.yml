@@ -1,4 +1,4 @@
-name: 1. Provision Infrastructure (Terraform)
+name: Provision Infrastructure (Terraform)
 
 on:
   workflow_dispatch: # Manual trigger
